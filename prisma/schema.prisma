@@ -3,11 +3,39 @@
 // Define relationships between models
 // Configure datasource (PostgreSQL/MySQL) and generator (client)
 
-// datasource db {
-//   provider = "postgresql"
-//   url      = env("DATABASE_URL")
-// }
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
 
-// generator client {
-//   provider = "prisma-client-js"
-// }
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+    student
+    faculty
+    admin
+}
+
+model User{
+    id String @id @default(uuid())
+
+    email String @unique
+    password String
+    name String
+
+    role Role @default(student)
+    department String @default("")
+    avatarUrl String @default("")
+    bio String @db.VarChar(200) @default("")
+
+    isActive Boolean @default(true)
+    isVerified Boolean @default(false)
+
+    verificationToken String?
+    verificationTokenExpiry DateTime?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
