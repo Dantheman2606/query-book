@@ -3,9 +3,14 @@
 // Define relationships between models
 // Configure datasource (PostgreSQL/MySQL) and generator (client)
 
+// =========================
+// TO START DB
+// docker-compose up -d
+// TO CONNECT TO DB AND CREATE TABLES
+// npx prisma db push
+
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 generator client {
