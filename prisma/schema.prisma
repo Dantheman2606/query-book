@@ -1,0 +1,13 @@
+// Prisma schema file
+// Define database models (User, Query, Reply, Tag, Announcement, etc.)
+// Define relationships between models
+// Configure datasource (PostgreSQL/MySQL) and generator (client)
+
+// datasource db {
+//   provider = "postgresql"
+//   url      = env("DATABASE_URL")
+// }
+
+// generator client {
+//   provider = "prisma-client-js"
+// }
