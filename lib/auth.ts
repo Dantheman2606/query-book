@@ -4,6 +4,13 @@ import { compare } from 'bcryptjs';
 import { db } from './db';
 import { JWT } from 'next-auth/jwt';
 
+type SessionUserWithClaims = NonNullable<Session['user']> & {
+  id: string;
+  role: string;
+  emailVerified: boolean;
+  isActive: boolean;
+};
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -58,10 +65,11 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }: { session: Session; token: JWT }) {
       if (session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
-        session.user.emailVerified = token.emailVerified as boolean;
-        session.user.isActive = token.isActive as boolean;
+        const sessionUser = session.user as SessionUserWithClaims;
+        sessionUser.id = token.id as string;
+        sessionUser.role = token.role as string;
+        sessionUser.emailVerified = token.emailVerified as boolean;
+        sessionUser.isActive = token.isActive as boolean;
       }
       return session;
     },

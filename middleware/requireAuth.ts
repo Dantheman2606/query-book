@@ -1,11 +1,28 @@
-// Authentication middleware helper for API route handlers
-// Pattern: wraps a Next.js route handler function
-//
-// Usage in a route file:
-//   export const GET = withAuth(async (request, context, user) => { ... })
-//
-// Logic:
-// - Call getCurrentUser() from lib/auth.ts
-// - If no session or no user: return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-// - If valid: call the wrapped handler, passing request, context, and the user object
-// - The user object shape: { id, email, role, name }
+import { NextRequest, NextResponse } from 'next/server';
+import { getCurrentUser } from '@/lib/auth';
+import type { AuthRouteHandler } from '@/types/middleware';
+
+/**
+ * Higher-order function that wraps a Next.js API route handler with authentication.
+ * Ensures the user is authenticated before allowing the handler to execute.
+ *
+ * @param handler - The original route handler function
+ * @returns A wrapped handler that checks authentication
+ *
+ * @example
+ * export const GET = withAuth(async (request, context, user) => {
+ *   // user is guaranteed to exist here
+ *   return NextResponse.json({ user });
+ * });
+ */
+export function withAuth(handler: AuthRouteHandler) {
+  return async (request: NextRequest, context?: any) => {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    return handler(request, context, user);
+  };
+}
