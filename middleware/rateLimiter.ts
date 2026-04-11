@@ -1,20 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Ratelimit } from '@upstash/ratelimit';
 import { redis } from '@/utils/redis';
 import type { RouteHandler, LimiterType } from '@/types/middleware';
 
-// Rate limiters configuration
-const generalLimiter = new Ratelimit({
-  redis: redis,
-  limiter: Ratelimit.slidingWindow(100, '60 s'),
-  analytics: true,
-});
+/**
+ * Simple rate limiter using Redis counter with TTL
+ */
+async function checkRateLimit(
+  key: string,
+  limit: number,
+  window: number
+): Promise<{ success: boolean; remaining: number; reset: number }> {
+  const now = Date.now();
+  const resetTime = now + window * 1000;
 
-const authLimiter = new Ratelimit({
-  redis: redis,
-  limiter: Ratelimit.slidingWindow(10, '60 s'),
-  analytics: true,
-});
+  try {
+    // Increment the counter for this key
+    const current = await redis.incr(key);
+
+    // Set expiration on first request
+    if (current === 1) {
+      await redis.expire(key, window);
+    }
+
+    // Get the TTL to calculate reset time
+    const ttl = await redis.ttl(key);
+    const reset = now + (ttl > 0 ? ttl * 1000 : window * 1000);
+
+    if (current <= limit) {
+      return {
+        success: true,
+        remaining: Math.max(0, limit - current),
+        reset,
+      };
+    }
+
+    return {
+      success: false,
+      remaining: 0,
+      reset,
+    };
+  } catch (error) {
+    console.error('Rate limit check error:', error);
+    // Allow request if Redis fails
+    const reset = now + window * 1000;
+    return {
+      success: true,
+      remaining: limit - 1,
+      reset,
+    };
+  }
+}
 
 /**
  * Higher-order function that wraps a Next.js API route handler with rate limiting.
@@ -36,16 +71,21 @@ export function withRateLimit(handler: RouteHandler, options: { type: LimiterTyp
       request.headers.get('x-real-ip') ||
       '127.0.0.1';
 
-    // Select appropriate limiter
-    const limiter = options.type === 'auth' ? authLimiter : generalLimiter;
+    // Select rate limit parameters
+    const limits = {
+      auth: { limit: 10, window: 60 },
+      general: { limit: 100, window: 60 },
+    };
+    const { limit, window } = limits[options.type];
 
     // Check rate limit
-    const { success, limit, remaining, reset } = await limiter.limit(ip);
+    const rateLimitKey = `ratelimit:${options.type}:${ip}`;
+    const { success, remaining, reset } = await checkRateLimit(rateLimitKey, limit, window);
 
     // Create response headers
     const headers = new Headers({
       'X-RateLimit-Limit': limit.toString(),
-      'X-RateLimit-Remaining': remaining.toString(),
+      'X-RateLimit-Remaining': Math.max(0, remaining).toString(),
       'X-RateLimit-Reset': new Date(reset).toISOString(),
     });
 

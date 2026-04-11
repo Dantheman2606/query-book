@@ -1,10 +1,13 @@
-import { Redis } from '@upstash/redis';
+import { createClient } from 'redis';
 
 /**
- * Upstash Redis client for rate limiting
- * Initialized with UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN
+ * Redis client for rate limiting
+ * Connects to local Docker Redis service on localhost:6379
  */
-export const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+export const redis = createClient({
+  url: 'redis://localhost:6379',
+});
+
+redis.connect().catch((err) => {
+  console.error('Failed to connect to Redis:', err);
 });
