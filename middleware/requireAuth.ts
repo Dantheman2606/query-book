@@ -17,7 +17,7 @@ import type { AuthRouteHandler } from '@/types/middleware';
  */
 export function withAuth(handler: AuthRouteHandler) {
   return async (request: NextRequest, context?: any) => {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
