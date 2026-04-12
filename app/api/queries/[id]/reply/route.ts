@@ -18,7 +18,7 @@ export const POST = withRateLimit(
   withAuth(
     (async (request, context, user) => {
       try {
-        const { id } = context.params;
+        const { id } = await context.params;
         const body = await request.json();
 
         // Add queryId from URL params
