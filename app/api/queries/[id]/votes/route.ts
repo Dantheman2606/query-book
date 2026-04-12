@@ -1,16 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@/middleware/requireAuth';
+import { getQueryVotes, getQueryVote } from '@/services/vote.service';
+import type { AuthRouteHandler } from '@/types/middleware';
 
 /**
- * Returns the current vote count for a query
- * May also return user's vote status (up/down/none) if authenticated context is used
+ * Get vote count for a query
+ * Also returns user's vote status if authenticated
  *
  * Route: GET /api/queries/:id/votes
  * Auth Required: Yes
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  // Implementation goes here
-  return NextResponse.json({ votes: 10, userVote: 'up' }, { status: 200 });
-}
+export const GET = withAuth(
+  (async (request, context, user) => {
+    try {
+      const { id } = context.params;
+      const votes = await getQueryVotes(id);
+      const userVote = await getQueryVote(id, user.id);
+
+      return NextResponse.json(
+        { ...votes, userVote },
+        { status: 200 }
+      );
+    } catch (error) {
+      console.error('Error fetching query votes:', error);
+
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      const status = message.includes('not found') ? 404 : 500;
+
+      return NextResponse.json(
+        { message: 'Server error', error: message },
+        { status }
+      );
+    }
+  }) as AuthRouteHandler
+);

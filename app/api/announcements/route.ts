@@ -2,31 +2,28 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/middleware/requireAuth';
 import { withFaculty } from '@/middleware/requireFaculty';
 import { withRateLimit } from '@/middleware/rateLimiter';
-import { db } from '@/lib/db';
 import {
   CreateAnnouncementSchema,
   AnnouncementFilterSchema,
   type CreateAnnouncement,
   type AnnouncementFilter,
 } from '@/schemas/announcement';
+import {
+  createAnnouncement,
+  getAnnouncements,
+} from '@/services/announcement.service';
 import type { AuthRouteHandler } from '@/types/middleware';
 
 /**
- * Creates a new announcement
- * Only accessible by Faculty (Faculty Required: Yes)
- * Validates title and content
- * Returns created announcement with user details
- *
+ * Creates a new announcement (Faculty only)
  * Route: POST /api/announcements
- * Auth Required: Yes
- * Faculty Required: Yes
+ * Auth Required: Yes | Faculty Required: Yes
  * Rate Limit: 10 requests per 60 seconds per IP
  */
 export const POST = withRateLimit(
   withFaculty(
     (async (request, context, user) => {
       try {
-        // Parse and validate request body
         const body = await request.json();
         const result = CreateAnnouncementSchema.safeParse(body);
 
@@ -41,25 +38,7 @@ export const POST = withRateLimit(
         }
 
         const data: CreateAnnouncement = result.data;
-
-        // Create announcement in database
-        const announcement = await db.announcement.create({
-          data: {
-            title: data.title,
-            content: data.content,
-            postedBy: user.name,
-            userId: user.id,
-          },
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                avatarUrl: true,
-              },
-            },
-          },
-        });
+        const announcement = await createAnnouncement(data, user.id, user.name);
 
         return NextResponse.json(
           { message: 'Announcement posted successfully', announcement },
@@ -68,7 +47,6 @@ export const POST = withRateLimit(
       } catch (error) {
         console.error('Error creating announcement:', error);
 
-        // Handle JSON parse errors
         if (error instanceof SyntaxError) {
           return NextResponse.json(
             { error: 'Invalid JSON in request body' },
@@ -87,26 +65,15 @@ export const POST = withRateLimit(
 );
 
 /**
- * Returns all announcements
- * Supports filtering, searching, and sorting
- * Accessible by any authenticated user
- *
- * Query Parameters:
- * - search: Search in title/content (optional)
- * - sortBy: 'recent' or 'oldest' (default: 'recent')
- * - limit: Number of results (default: 20, max: 100)
- * - offset: Pagination offset (default: 0)
- *
+ * Returns all announcements with filtering and pagination
  * Route: GET /api/announcements
  * Auth Required: Yes
- * Faculty Required: No
  * Rate Limit: 100 requests per 60 seconds per IP
  */
 export const GET = withRateLimit(
   withAuth(
     (async (request, context, user) => {
       try {
-        // Parse query parameters
         const searchParams = new URL(request.url).searchParams;
         const filters: Partial<AnnouncementFilter> = {
           search: searchParams.get('search') || undefined,
@@ -115,52 +82,10 @@ export const GET = withRateLimit(
           offset: searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : 0,
         };
 
-        // Validate query parameters
         const validatedFilters = AnnouncementFilterSchema.parse(filters);
+        const result = await getAnnouncements(validatedFilters);
 
-        // Build query filters
-        const where: any = {};
-        if (validatedFilters.search) {
-          where.OR = [
-            { title: { contains: validatedFilters.search, mode: 'insensitive' } },
-            { content: { contains: validatedFilters.search, mode: 'insensitive' } },
-          ];
-        }
-
-        // Fetch announcements
-        const announcements = await db.announcement.findMany({
-          where,
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                avatarUrl: true,
-              },
-            },
-          },
-          orderBy: {
-            datePosted: validatedFilters.sortBy === 'recent' ? 'desc' : 'asc',
-          },
-          take: validatedFilters.limit,
-          skip: validatedFilters.offset,
-        });
-
-        // Get total count for pagination
-        const total = await db.announcement.count({ where });
-
-        return NextResponse.json(
-          {
-            announcements,
-            pagination: {
-              total,
-              limit: validatedFilters.limit,
-              offset: validatedFilters.offset,
-              hasMore: validatedFilters.offset + validatedFilters.limit < total,
-            },
-          },
-          { status: 200 }
-        );
+        return NextResponse.json(result, { status: 200 });
       } catch (error) {
         console.error('Error fetching announcements:', error);
         return NextResponse.json(

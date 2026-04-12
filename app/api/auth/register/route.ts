@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { hash } from 'bcryptjs';
-import { randomBytes } from 'crypto';
-import { db } from '@/lib/db';
 import { withRateLimit } from '@/middleware/rateLimiter';
 import { RegisterSchema, type Register } from '@/schemas/auth';
+import { registerUser } from '@/services/auth.service';
 
 /**
- * Validates user registration data (email, password, etc.)
- * Checks if user already exists in database
- * Hashes the password
- * Creates a new user record with verification token
- * Sends verification email
+ * Registers a new user
+ * Creates user record with verification token
  * Returns user details (without password)
  *
  * Route: POST /api/auth/register
@@ -20,10 +15,7 @@ import { RegisterSchema, type Register } from '@/schemas/auth';
 export const POST = withRateLimit(
   async (request: NextRequest) => {
     try {
-      // Parse request body
       const body = await request.json();
-
-      // Validate against schema
       const result = RegisterSchema.safeParse(body);
 
       if (!result.success) {
@@ -37,76 +29,18 @@ export const POST = withRateLimit(
       }
 
       const data: Register = result.data;
+      const newUser = await registerUser(data);
 
-      // Prevent admin registration
-      if (data.role === 'admin') {
-        return NextResponse.json(
-          { message: 'You cannot register as admin' },
-          { status: 403 }
-        );
-      }
-
-      // Check if user already exists
-      const existingUser = await db.user.findUnique({
-        where: { email: data.email },
-      });
-
-      if (existingUser) {
-        return NextResponse.json(
-          { message: 'Email already registered.' },
-          { status: 409 }
-        );
-      }
-
-      // Hash password
-      const hashedPassword = await hash(data.password, 10);
-
-      // Generate verification token (32 bytes = 64 hex characters)
-      const verificationToken = randomBytes(32).toString('hex');
-      const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-      // Create new user
-      const newUser = await db.user.create({
-        data: {
-          name: data.name,
-          email: data.email,
-          password: hashedPassword,
-          role: data.role === 'faculty' ? 'faculty' : 'student',
-          department: data.department || '',
-          avatarUrl: data.avatarUrl || '',
-          bio: data.bio || '',
-          isVerified: false,
-          isActive: true,
-          verificationToken,
-          verificationTokenExpiry,
-        },
-      });
-
-      // TODO: Send verification email
-      // await sendVerificationEmail(newUser.email, verificationToken);
-
-      // Return user details (without password)
       return NextResponse.json(
         {
           message: 'User registered successfully. Please check your email to verify your account.',
-          user: {
-            id: newUser.id,
-            name: newUser.name,
-            email: newUser.email,
-            role: newUser.role,
-            department: newUser.department,
-            avatarUrl: newUser.avatarUrl,
-            bio: newUser.bio,
-            isVerified: newUser.isVerified,
-            createdAt: newUser.createdAt,
-          },
+          user: newUser,
         },
         { status: 201 }
       );
     } catch (error) {
       console.error('Registration error:', error);
 
-      // Handle JSON parse errors
       if (error instanceof SyntaxError) {
         return NextResponse.json(
           { error: 'Invalid JSON in request body' },
@@ -114,9 +48,12 @@ export const POST = withRateLimit(
         );
       }
 
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      const status = message.includes('cannot') ? 403 : message.includes('already') ? 409 : 500;
+
       return NextResponse.json(
-        { message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' },
-        { status: 500 }
+        { message: 'Server error', error: message },
+        { status }
       );
     }
   },

@@ -1,18 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@/middleware/requireAuth';
+import { withRateLimit } from '@/middleware/rateLimiter';
+import { toggleReplyUpvote } from '@/services/vote.service';
+import type { AuthRouteHandler } from '@/types/middleware';
 
 /**
- * Upvotes a reply
- * Toggle behavior (add/remove/switch)
+ * Toggle upvote on a reply
+ * Toggle behavior: add/remove/switch vote
  * Updates vote count on the reply
- * Returns success/updated count
  *
  * Route: PUT /api/replies/:id/upvote
  * Auth Required: Yes
+ * Rate Limit: 30 requests per 60 seconds per IP
  */
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  // Implementation goes here
-  return NextResponse.json({ message: 'Reply Upvoted' }, { status: 200 });
-}
+export const PUT = withRateLimit(
+  withAuth(
+    (async (request, context, user) => {
+      try {
+        const { id } = context.params;
+        const result = await toggleReplyUpvote(id, user.id);
+
+        return NextResponse.json(
+          { message: 'Vote updated', ...result },
+          { status: 200 }
+        );
+      } catch (error) {
+        console.error('Error upvoting reply:', error);
+
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        const status = message.includes('not found') ? 404 : 500;
+
+        return NextResponse.json(
+          { message: 'Server error', error: message },
+          { status }
+        );
+      }
+    }) as AuthRouteHandler
+  ),
+  { type: 'auth' }
+);
