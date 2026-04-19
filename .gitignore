@@ -150,3 +150,6 @@ test-logs/
 test-results/
 playwright-report/
 .swc
+
+# Local demo data scripts
+local-seed/

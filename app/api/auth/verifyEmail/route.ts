@@ -3,6 +3,32 @@ import { withRateLimit } from '@/middleware/rateLimiter';
 import { VerifyEmailSchema, type VerifyEmail } from '@/schemas/auth';
 import { verifyEmail } from '@/services/auth.service';
 
+function getAppUrl(): string {
+  return process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+}
+
+/**
+ * Verifies user email via URL token click and redirects to login
+ *
+ * Route: GET /api/auth/verifyEmail?token=...
+ * Auth Required: No
+ */
+export async function GET(request: NextRequest) {
+  const appUrl = getAppUrl();
+  const token = request.nextUrl.searchParams.get('token');
+
+  if (!token) {
+    return NextResponse.redirect(`${appUrl}/login?verified=missing-token`);
+  }
+
+  try {
+    await verifyEmail({ token });
+    return NextResponse.redirect(`${appUrl}/login?verified=success`);
+  } catch {
+    return NextResponse.redirect(`${appUrl}/login?verified=invalid`);
+  }
+}
+
 /**
  * Verifies user email with verification token
  * Updates user's isVerified status in database

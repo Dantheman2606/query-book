@@ -49,7 +49,11 @@ export const POST = withRateLimit(
       }
 
       const message = error instanceof Error ? error.message : 'Unknown error';
-      const status = message.includes('Invalid') ? 401 : 500;
+      const status = message.includes('Invalid')
+        ? 401
+        : message.includes('verify your email')
+        ? 403
+        : 500;
 
       return NextResponse.json(
         { message: 'Server error', error: message },

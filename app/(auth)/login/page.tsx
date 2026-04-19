@@ -8,6 +8,7 @@ import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import { Mail, Lock } from 'lucide-react';
+import { useEffect } from 'react';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -17,6 +18,18 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const status = new URLSearchParams(window.location.search).get('verified');
+    if (status === 'success') {
+      showToast('Email verified successfully. You can now sign in.', 'success');
+    } else if (status === 'invalid') {
+      showToast('Verification link is invalid or expired.', 'error');
+    } else if (status === 'missing-token') {
+      showToast('Verification token is missing.', 'error');
+    }
+  }, [showToast]);
 
   const validate = () => {
     const e: typeof errors = {};

@@ -3,6 +3,7 @@ import { SignJWT } from 'jose';
 import { randomBytes } from 'crypto';
 import { db } from '@/lib/db';
 import { type Login, type Register, type VerifyEmail } from '@/schemas/auth';
+import { sendVerificationEmail } from '@/utils/mail';
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.NEXTAUTH_SECRET || 'default_development_secret_key_change_in_production'
@@ -51,6 +52,10 @@ export async function loginUser(data: Login): Promise<AuthToken> {
 
   if (!user.isActive) {
     throw new Error('Account is inactive. Please contact support.');
+  }
+
+  if (!user.isVerified) {
+    throw new Error('Please verify your email before signing in.');
   }
 
   const isPasswordMatch = await compare(data.password, user.password);
@@ -124,8 +129,7 @@ export async function registerUser(data: Register): Promise<UserProfile> {
     },
   });
 
-  // TODO: Send verification email
-  // await sendVerificationEmail(newUser.email, verificationToken);
+  await sendVerificationEmail(newUser.email, verificationToken);
 
   return {
     id: newUser.id,
