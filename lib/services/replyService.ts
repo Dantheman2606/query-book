@@ -1,6 +1,14 @@
 import { apiRequest } from '@/lib/apiClient';
 import type { Reply, CreateReplyPayload } from '@/types/frontend';
 
+export interface ReplyVoteResponse {
+  message: string;
+  replyId: string;
+  upvotes: number;
+  downvotes: number;
+  userVote: 'UPVOTE' | 'DOWNVOTE' | null;
+}
+
 export async function getReplies(queryId: string): Promise<{ replies: Reply[] }> {
   return apiRequest<{ replies: Reply[] }>(`/replies/${queryId}/replies`);
 }
@@ -20,9 +28,9 @@ export async function createReplyToReply(queryId: string, payload: CreateReplyPa
 }
 
 export async function upvoteReply(replyId: string) {
-  return apiRequest(`/replies/${replyId}/upvote`, { method: 'PUT' });
+  return apiRequest<ReplyVoteResponse>(`/replies/${replyId}/upvote`, { method: 'PUT' });
 }
 
 export async function downvoteReply(replyId: string) {
-  return apiRequest(`/replies/${replyId}/downvote`, { method: 'PUT' });
+  return apiRequest<ReplyVoteResponse>(`/replies/${replyId}/downvote`, { method: 'PUT' });
 }

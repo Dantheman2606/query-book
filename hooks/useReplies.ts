@@ -8,6 +8,8 @@ export function useReplies(queryId: string) {
   const { showToast } = useToast();
   const [replies, setReplies] = useState<Reply[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [userVotes, setUserVotes] = useState<Record<string, 'UPVOTE' | 'DOWNVOTE' | null>>({});
+  const [pendingVotes, setPendingVotes] = useState<Record<string, boolean>>({});
 
   const fetchReplies = useCallback(async () => {
     setIsLoading(true);
@@ -38,28 +40,100 @@ export function useReplies(queryId: string) {
   }, [queryId, fetchReplies, showToast]);
 
   const vote = useCallback(async (replyId: string, type: 'up' | 'down') => {
+    if (pendingVotes[replyId]) return;
+
+    const previousVote = userVotes[replyId] ?? null;
+    let previousReply: Reply | null = null;
+
+    const findReply = (items: Reply[]): Reply | null => {
+      for (const item of items) {
+        if (item.id === replyId) return item;
+        if (item.children?.length) {
+          const found = findReply(item.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    const updateReply = (
+      items: Reply[],
+      updater: (reply: Reply) => Reply
+    ): Reply[] =>
+      items.map(item => {
+        if (item.id === replyId) return updater(item);
+        if (item.children?.length) {
+          return { ...item, children: updateReply(item.children, updater) };
+        }
+        return item;
+      });
+
+    const applyTransition = (reply: Reply, voteType: 'up' | 'down', currentVote: 'UPVOTE' | 'DOWNVOTE' | null) => {
+      let netVotes = reply.netVotes;
+      let nextVote: 'UPVOTE' | 'DOWNVOTE' | null = currentVote;
+
+      if (voteType === 'up') {
+        if (currentVote === 'UPVOTE') {
+          netVotes -= 1;
+          nextVote = null;
+        } else if (currentVote === 'DOWNVOTE') {
+          netVotes += 2;
+          nextVote = 'UPVOTE';
+        } else {
+          netVotes += 1;
+          nextVote = 'UPVOTE';
+        }
+      } else {
+        if (currentVote === 'DOWNVOTE') {
+          netVotes += 1;
+          nextVote = null;
+        } else if (currentVote === 'UPVOTE') {
+          netVotes -= 2;
+          nextVote = 'DOWNVOTE';
+        } else {
+          netVotes -= 1;
+          nextVote = 'DOWNVOTE';
+        }
+      }
+
+      return { netVotes, nextVote };
+    };
+
+    setPendingVotes(prev => ({ ...prev, [replyId]: true }));
+
     try {
-      if (type === 'up') await replyService.upvoteReply(replyId);
-      else await replyService.downvoteReply(replyId);
-      // Optimistic update
-      const updateVotes = (items: Reply[]): Reply[] =>
-        items.map(r => {
-          if (r.id === replyId) {
-            return {
-              ...r,
-              netVotes: type === 'up' ? r.netVotes + 1 : r.netVotes - 1,
-            };
-          }
-          if (r.children?.length) {
-            return { ...r, children: updateVotes(r.children) };
-          }
-          return r;
+      setReplies(prev => {
+        previousReply = findReply(prev);
+        return updateReply(prev, (reply) => {
+          const { netVotes, nextVote } = applyTransition(reply, type, previousVote);
+          setUserVotes(v => ({ ...v, [replyId]: nextVote }));
+          return { ...reply, netVotes };
         });
-      setReplies(prev => updateVotes(prev));
+      });
+
+      const result = type === 'up'
+        ? await replyService.upvoteReply(replyId)
+        : await replyService.downvoteReply(replyId);
+
+      setReplies(prev =>
+        updateReply(prev, (reply) => ({
+          ...reply,
+          netVotes: result.upvotes - result.downvotes,
+        }))
+      );
+      setUserVotes(prev => ({ ...prev, [replyId]: result.userVote }));
     } catch (e: any) {
+      if (previousReply) {
+        setReplies(prev =>
+          updateReply(prev, () => previousReply!)
+        );
+      }
+      setUserVotes(prev => ({ ...prev, [replyId]: previousVote }));
       showToast(e.message || 'Failed to vote', 'error');
+    } finally {
+      setPendingVotes(prev => ({ ...prev, [replyId]: false }));
     }
-  }, [showToast]);
+  }, [pendingVotes, showToast, userVotes]);
 
   return { replies, isLoading, fetchReplies, postReply, vote };
 }

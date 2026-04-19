@@ -86,20 +86,17 @@ export async function createReply(
  * Get replies for a query
  */
 export async function getReplies(filters: ReplyFilter): Promise<RepliesResponse> {
-  const where: any = {
-    queryId: filters.queryId,
-    parentId: filters.parentId || null,
-  };
+  const orderBy: any =
+    filters.sortBy === 'votes'
+      ? { netVotes: 'desc' }
+      : { datePosted: 'desc' };
 
-  const orderBy: any = {};
-  if (filters.sortBy === 'votes') {
-    orderBy.netVotes = 'desc';
-  } else {
-    orderBy.datePosted = 'desc';
-  }
-
-  const replies = await db.reply.findMany({
-    where,
+  // Fetch all replies for the query and build the tree in memory.
+  // This supports arbitrary nesting depth (reply to reply to reply...).
+  const flatReplies = await db.reply.findMany({
+    where: {
+      queryId: filters.queryId,
+    },
     include: {
       user: {
         select: {
@@ -108,27 +105,48 @@ export async function getReplies(filters: ReplyFilter): Promise<RepliesResponse>
           avatarUrl: true,
         },
       },
-      children: {
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              avatarUrl: true,
-            },
-          },
-        },
-      },
     },
     orderBy,
-    take: filters.limit,
-    skip: filters.offset,
   });
 
-  const total = await db.reply.count({ where });
+  const byId = new Map<string, ReplyResponse>();
+  const topLevel: ReplyResponse[] = [];
+
+  for (const item of flatReplies) {
+    byId.set(item.id, {
+      id: item.id,
+      content: item.content,
+      netVotes: item.netVotes,
+      postedBy: item.postedBy,
+      userId: item.userId,
+      queryId: item.queryId,
+      parentId: item.parentId,
+      datePosted: item.datePosted,
+      user: item.user,
+      children: [],
+    });
+  }
+
+  for (const item of flatReplies) {
+    const current = byId.get(item.id)!;
+    if (item.parentId && byId.has(item.parentId)) {
+      byId.get(item.parentId)!.children!.push(current);
+    } else {
+      topLevel.push(current);
+    }
+  }
+
+  const scopedRoots = filters.parentId
+    ? flatReplies
+        .filter((reply) => reply.parentId === filters.parentId)
+        .map((reply) => byId.get(reply.id)!)
+    : topLevel;
+
+  const total = scopedRoots.length;
+  const pagedRoots = scopedRoots.slice(filters.offset, filters.offset + filters.limit);
 
   return {
-    replies: replies.map(formatReplyResponse),
+    replies: pagedRoots,
     pagination: {
       total,
       limit: filters.limit,

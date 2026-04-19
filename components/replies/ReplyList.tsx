@@ -42,7 +42,7 @@ export default function ReplyList({ replies, queryId, isLoading, onVote, onPost 
         onCancelReply={() => {}}
       />
 
-      <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+      <div className="pt-4 mt-4">
         {replies.length === 0 ? (
           <EmptyState
             icon={<MessageSquare className="w-5 h-5" />}
@@ -58,19 +58,11 @@ export default function ReplyList({ replies, queryId, isLoading, onVote, onPost 
                   depth={0}
                   onVote={onVote}
                   onReply={handleReply}
+                  replyingToId={replyingTo?.id ?? null}
+                  replyingToAuthor={replyingTo?.author ?? null}
+                  onPostReply={(content, parentId) => handlePost(content, parentId)}
+                  onCancelReply={() => setReplyingTo(null)}
                 />
-                {/* Inline reply form for nested */}
-                {replyingTo?.id === reply.id && (
-                  <div className="ml-10 mb-3">
-                    <ReplyForm
-                      placeholder={`Replying to ${replyingTo.author}…`}
-                      onSubmit={content => handlePost(content, replyingTo.id)}
-                      replyingTo={replyingTo.author}
-                      onCancelReply={() => setReplyingTo(null)}
-                      autoFocus
-                    />
-                  </div>
-                )}
               </div>
             ))}
           </div>

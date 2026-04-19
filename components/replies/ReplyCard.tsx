@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ArrowUp, ArrowDown, MessageSquare, ChevronDown } from 'lucide-react';
 import type { Reply } from '@/types/frontend';
 import Avatar from '@/components/ui/Avatar';
+import ReplyForm from './ReplyForm';
 import { formatDistanceToNow } from '@/components/queries/timeUtils';
 import { useAuth } from '@/contexts/AuthContext';
 import { clsx } from 'clsx';
@@ -12,11 +13,24 @@ interface ReplyCardProps {
   depth?: number;
   onVote: (id: string, type: 'up' | 'down') => void;
   onReply: (parentId: string, parentAuthor: string) => void;
+  replyingToId: string | null;
+  replyingToAuthor: string | null;
+  onPostReply: (content: string, parentId: string) => Promise<void>;
+  onCancelReply: () => void;
 }
 
 const MAX_DEPTH = 6; // Stop indenting past this
 
-export default function ReplyCard({ reply, depth = 0, onVote, onReply }: ReplyCardProps) {
+export default function ReplyCard({
+  reply,
+  depth = 0,
+  onVote,
+  onReply,
+  replyingToId,
+  replyingToAuthor,
+  onPostReply,
+  onCancelReply,
+}: ReplyCardProps) {
   const { user } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -115,6 +129,18 @@ export default function ReplyCard({ reply, depth = 0, onVote, onReply }: ReplyCa
         </div>
 
         {/* Recursive children */}
+        {replyingToId === reply.id && (
+          <div className="ml-10 mb-3 mt-2">
+            <ReplyForm
+              placeholder={`Replying to ${replyingToAuthor ?? reply.postedBy}...`}
+              onSubmit={(content) => onPostReply(content, reply.id)}
+              replyingTo={replyingToAuthor ?? reply.postedBy}
+              onCancelReply={onCancelReply}
+              autoFocus
+            />
+          </div>
+        )}
+
         {!collapsed && hasChildren && (
           <div className="mt-2">
             {reply.children!.map(child => (
@@ -124,6 +150,10 @@ export default function ReplyCard({ reply, depth = 0, onVote, onReply }: ReplyCa
                 depth={depth + 1}
                 onVote={onVote}
                 onReply={onReply}
+                replyingToId={replyingToId}
+                replyingToAuthor={replyingToAuthor}
+                onPostReply={onPostReply}
+                onCancelReply={onCancelReply}
               />
             ))}
           </div>
