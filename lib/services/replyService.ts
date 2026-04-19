@@ -6,7 +6,7 @@ export async function getReplies(queryId: string): Promise<{ replies: Reply[] }>
 }
 
 export async function createReply(payload: CreateReplyPayload): Promise<{ reply: Reply }> {
-  return apiRequest<{ reply: Reply }>(`/replies/${payload.queryId}/reply`, {
+  return apiRequest<{ reply: Reply }>(`/queries/${payload.queryId}/reply`, {
     method: 'POST',
     body: payload,
   });
@@ -20,9 +20,9 @@ export async function createReplyToReply(queryId: string, payload: CreateReplyPa
 }
 
 export async function upvoteReply(replyId: string) {
-  return apiRequest(`/replies/${replyId}/upvote`, { method: 'POST' });
+  return apiRequest(`/replies/${replyId}/upvote`, { method: 'PUT' });
 }
 
 export async function downvoteReply(replyId: string) {
-  return apiRequest(`/replies/${replyId}/downvote`, { method: 'POST' });
+  return apiRequest(`/replies/${replyId}/downvote`, { method: 'PUT' });
 }

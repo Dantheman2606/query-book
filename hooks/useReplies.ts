@@ -25,7 +25,7 @@ export function useReplies(queryId: string) {
     const isNested = !!payload.parentId;
     try {
       if (isNested) {
-        await replyService.createReplyToReply(queryId, payload);
+        await replyService.createReplyToReply(payload.parentId!, payload);
       } else {
         await replyService.createReply(payload);
       }

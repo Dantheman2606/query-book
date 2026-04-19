@@ -14,9 +14,9 @@ export function useQueries(initialFilters: QueryFilters = {}) {
   const fetchQueries = useCallback(async (overrides?: QueryFilters) => {
     setIsLoading(true);
     try {
-      const result = await queryService.getQueries({ ...filters, ...overrides });
-      setQueries(result.data ?? []);
-      setTotal(result.total ?? 0);
+      const result = await queryService.getQueries({ ...filters, ...overrides }) as any;
+      setQueries(result.queries || result.data || []);
+      setTotal(result.pagination?.total ?? result.total ?? 0);
     } catch (e: any) {
       showToast(e.message || 'Failed to load queries', 'error');
     } finally {
@@ -30,14 +30,25 @@ export function useQueries(initialFilters: QueryFilters = {}) {
 
   const vote = useCallback(async (id: string, type: 'up' | 'down') => {
     try {
-      if (type === 'up') await queryService.upvoteQuery(id);
-      else await queryService.downvoteQuery(id);
-      // Optimistically update vote counts by re-fetching
-      await fetchQueries();
+      const result = type === 'up'
+        ? await queryService.upvoteQuery(id)
+        : await queryService.downvoteQuery(id);
+
+      setQueries(prev =>
+        prev.map(query =>
+          query.id === id
+            ? {
+                ...query,
+                upvotes: result.upvotes,
+                downvotes: result.downvotes,
+              }
+            : query
+        )
+      );
     } catch (e: any) {
       showToast(e.message || 'Failed to vote', 'error');
     }
-  }, [fetchQueries, showToast]);
+  }, [showToast]);
 
   const deleteQuery = useCallback(async (id: string) => {
     try {

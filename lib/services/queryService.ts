@@ -1,6 +1,14 @@
 import { apiRequest } from '@/lib/apiClient';
 import type { Query, CreateQueryPayload, QueryFilters, PaginatedResult } from '@/types/frontend';
 
+export interface QueryVoteResponse {
+  message: string;
+  queryId: string;
+  upvotes: number;
+  downvotes: number;
+  userVote: 'UPVOTE' | 'DOWNVOTE' | null;
+}
+
 export async function getQueries(filters: QueryFilters = {}): Promise<PaginatedResult<Query>> {
   const params = new URLSearchParams();
   if (filters.search) params.set('search', filters.search);
@@ -28,11 +36,11 @@ export async function deleteQuery(id: string): Promise<void> {
 }
 
 export async function upvoteQuery(id: string) {
-  return apiRequest(`/queries/${id}/upvote`, { method: 'POST' });
+  return apiRequest<QueryVoteResponse>(`/queries/${id}/upvote`, { method: 'PUT' });
 }
 
 export async function downvoteQuery(id: string) {
-  return apiRequest(`/queries/${id}/downvote`, { method: 'POST' });
+  return apiRequest<QueryVoteResponse>(`/queries/${id}/downvote`, { method: 'PUT' });
 }
 
 export async function getQueryVotes(id: string) {

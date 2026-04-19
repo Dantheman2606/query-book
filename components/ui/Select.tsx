@@ -22,7 +22,10 @@ export default function Select({ label, error, options, wrapperClassName, id, cl
         id={selectId}
         {...props}
         className={clsx(
-          'input-base appearance-none cursor-pointer',
+          'input-base appearance-none',
+          props.disabled
+            ? 'cursor-not-allowed bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 opacity-90'
+            : 'cursor-pointer',
           error && 'border-rose-400 dark:border-rose-500',
           className
         )}

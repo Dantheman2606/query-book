@@ -17,22 +17,17 @@ export const GET = withAuth(
     try {
       const { id } = context.params;
       const searchParams = new URL(request.url).searchParams;
-
-      // This endpoint needs queryId to filter properly
-      // For now, we'll fetch children of this reply
-      // If queryId is not provided, respond with error
       const queryId = searchParams.get('queryId');
 
-      if (!queryId) {
-        return NextResponse.json(
-          { error: 'queryId parameter is required' },
-          { status: 400 }
-        );
-      }
+      // Backward-compatible behavior:
+      // - /api/replies/:id/replies?queryId=:queryId -> children for parent reply :id
+      // - /api/replies/:id/replies -> top-level replies for query :id
+      const effectiveQueryId = queryId ?? id;
+      const effectiveParentId = queryId ? id : null;
 
       const filters: Partial<ReplyFilter> = {
-        queryId,
-        parentId: id,
+        queryId: effectiveQueryId,
+        parentId: effectiveParentId,
         sortBy: (searchParams.get('sortBy') as 'recent' | 'votes') || 'recent',
         limit: searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 20,
         offset: searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : 0,

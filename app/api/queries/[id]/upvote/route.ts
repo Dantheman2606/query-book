@@ -18,7 +18,7 @@ export const PUT = withRateLimit(
   withAuth(
     (async (request, context, user) => {
       try {
-        const { id } = context.params;
+        const { id } = await context.params;
         const result = await toggleQueryUpvote(id, user.id);
 
         return NextResponse.json(

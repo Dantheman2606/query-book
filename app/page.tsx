@@ -24,7 +24,7 @@ function FloatingOrbs() {
       />
       {/* Right accent orb */}
       <div
-        className="absolute top-1/3 -right-48 w-[500px] h-[500px] rounded-full opacity-15 dark:opacity-8"
+        className="absolute top-1/3 -right-48 w-[500px] h-[500px] rounded-full opacity-[0.15] dark:opacity-[0.08]"
         style={{
           background: 'radial-gradient(circle, #818cf8 0%, #c084fc 50%, transparent 70%)',
           filter: 'blur(80px)',
@@ -33,7 +33,7 @@ function FloatingOrbs() {
       />
       {/* Bottom orb */}
       <div
-        className="absolute -bottom-40 left-1/3 w-[400px] h-[400px] rounded-full opacity-10 dark:opacity-6"
+        className="absolute -bottom-40 left-1/3 w-[400px] h-[400px] rounded-full opacity-10 dark:opacity-[0.06]"
         style={{
           background: 'radial-gradient(circle, #4f46e5 0%, #7c3aed 60%, transparent 80%)',
           filter: 'blur(70px)',
@@ -67,7 +67,7 @@ function FeatureCard({
   return (
     <div
       className="group relative p-6 rounded-2xl border border-gray-200/60 dark:border-white/5
-        bg-white/60 dark:bg-white/3 backdrop-blur-sm
+        bg-white/60 dark:bg-white/[0.03] backdrop-blur-sm
         hover:border-brand-300 dark:hover:border-brand-700/50
         hover:shadow-xl hover:shadow-brand-500/5
         transition-all duration-300 cursor-default"
@@ -89,7 +89,7 @@ function MockQueryCard({
   return (
     <div
       className="flex gap-3 p-4 rounded-xl border border-gray-200/70 dark:border-white/5
-        bg-white/70 dark:bg-white/4 backdrop-blur-sm
+        bg-white/70 dark:bg-white/[0.04] backdrop-blur-sm
         hover:border-brand-300/60 dark:hover:border-brand-700/40 transition-all duration-200"
       style={{ animationDelay: delay }}
     >
@@ -243,7 +243,7 @@ export default function LandingPage() {
       <section className="relative max-w-5xl mx-auto px-5 pb-24">
         {/* Glow behind the card */}
         <div
-          className="absolute inset-x-16 top-4 h-full rounded-3xl opacity-20 dark:opacity-15 -z-10"
+          className="absolute inset-x-16 top-4 h-full rounded-3xl opacity-20 dark:opacity-[0.15] -z-10"
           style={{
             background: 'radial-gradient(ellipse at 50% 0%, #6366f1 0%, transparent 70%)',
             filter: 'blur(40px)',
@@ -251,13 +251,13 @@ export default function LandingPage() {
         />
 
         {/* Browser chrome mockup */}
-        <div className="rounded-2xl border border-gray-200/70 dark:border-white/8 bg-white/80 dark:bg-[#0f0f18]/80 backdrop-blur-sm shadow-2xl shadow-black/10 dark:shadow-black/60 overflow-hidden">
+        <div className="rounded-2xl border border-gray-200/70 dark:border-white/[0.08] bg-white/80 dark:bg-[#0f0f18]/80 backdrop-blur-sm shadow-2xl shadow-black/10 dark:shadow-black/60 overflow-hidden">
           {/* Title bar */}
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200/60 dark:border-white/5 bg-gray-50/80 dark:bg-white/3">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200/60 dark:border-white/5 bg-gray-50/80 dark:bg-white/[0.03]">
             <div className="w-3 h-3 rounded-full bg-rose-400" />
             <div className="w-3 h-3 rounded-full bg-amber-400" />
             <div className="w-3 h-3 rounded-full bg-emerald-400" />
-            <div className="flex-1 mx-4 h-5 rounded-md bg-gray-200/70 dark:bg-white/6 flex items-center px-2">
+            <div className="flex-1 mx-4 h-5 rounded-md bg-gray-200/70 dark:bg-white/[0.06] flex items-center px-2">
               <span className="text-[10px] text-gray-400 dark:text-gray-500">querybook.app/queries</span>
             </div>
           </div>
@@ -373,7 +373,7 @@ export default function LandingPage() {
             { n: '02', title: 'Post a Query', desc: 'Ask your question, add relevant tags, and submit to the community.' },
             { n: '03', title: 'Get Answers', desc: 'Receive threaded replies, votes surface the best answer to the top.' },
           ].map(({ n, title, desc }) => (
-            <div key={n} className="p-8 bg-white/80 dark:bg-[#0f0f18]/80 backdrop-blur-sm hover:bg-gray-50/90 dark:hover:bg-white/3 transition-colors">
+            <div key={n} className="p-8 bg-white/80 dark:bg-[#0f0f18]/80 backdrop-blur-sm hover:bg-gray-50/90 dark:hover:bg-white/[0.03] transition-colors">
               <span className="text-3xl font-extrabold text-brand-500/30 dark:text-brand-500/20">{n}</span>
               <h3 className="text-sm font-semibold text-gray-900 dark:text-white mt-2 mb-1">{title}</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{desc}</p>

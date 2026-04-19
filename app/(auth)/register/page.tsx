@@ -12,7 +12,6 @@ import { Mail, Lock, User, Building2, ShieldCheck } from 'lucide-react';
 
 const ROLE_OPTIONS = [
   { value: 'student', label: 'Student' },
-  { value: 'faculty', label: 'Faculty' },
 ];
 
 export default function RegisterPage() {
@@ -65,60 +64,56 @@ export default function RegisterPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-          <Input
-            label="Full Name"
-            placeholder="Your name"
-            value={form.name}
-            onChange={set('name')}
-            error={errors.name}
-            leftIcon={<User className="w-4 h-4" />}
-            wrapperClassName="col-span-2"
-          />
-          <Input
-            label="Email"
-            type="email"
-            placeholder="you@university.edu"
-            value={form.email}
-            onChange={set('email')}
-            error={errors.email}
-            leftIcon={<Mail className="w-4 h-4" />}
-            wrapperClassName="col-span-2"
-          />
-          <Input
-            label="Password"
-            type="password"
-            placeholder="Min. 8 characters"
-            value={form.password}
-            onChange={set('password')}
-            error={errors.password}
-            leftIcon={<Lock className="w-4 h-4" />}
-          />
-          <Select
-            label="Role"
-            options={ROLE_OPTIONS}
-            value={form.role}
-            onChange={set('role')}
-          />
-          <Input
-            label="Confirm Password"
-            type="password"
-            placeholder="Re-enter password"
-            value={form.confirmPassword}
-            onChange={set('confirmPassword')}
-            error={errors.confirmPassword}
-            leftIcon={<ShieldCheck className="w-4 h-4" />}
-            wrapperClassName="col-span-2"
-          />
-          <Input
-            label="Department"
-            placeholder="e.g. Computer Science"
-            value={form.department}
-            onChange={set('department')}
-            leftIcon={<Building2 className="w-4 h-4" />}
-            wrapperClassName="col-span-2"
-          />
-        </div>
+        <Input
+          label="Full Name"
+          placeholder="Your name"
+          value={form.name}
+          onChange={set('name')}
+          error={errors.name}
+          leftIcon={<User className="w-4 h-4" />}
+        />
+        <Input
+          label="Email"
+          type="email"
+          placeholder="you@university.edu"
+          value={form.email}
+          onChange={set('email')}
+          error={errors.email}
+          leftIcon={<Mail className="w-4 h-4" />}
+        />
+        <Input
+          label="Password"
+          type="password"
+          placeholder="Min. 8 characters"
+          value={form.password}
+          onChange={set('password')}
+          error={errors.password}
+          leftIcon={<Lock className="w-4 h-4" />}
+        />
+        <Input
+          label="Confirm Password"
+          type="password"
+          placeholder="Re-enter password"
+          value={form.confirmPassword}
+          onChange={set('confirmPassword')}
+          error={errors.confirmPassword}
+          leftIcon={<ShieldCheck className="w-4 h-4" />}
+        />
+        <Select
+          label="Role"
+          options={ROLE_OPTIONS}
+          value={form.role}
+          disabled
+          title="Role is fixed during registration"
+        />
+        <p className="-mt-2 text-xs text-gray-400 dark:text-gray-500">Role is assigned as Student during signup.</p>
+        <Input
+          label="Department"
+          placeholder="e.g. Computer Science"
+          value={form.department}
+          onChange={set('department')}
+          leftIcon={<Building2 className="w-4 h-4" />}
+        />
         <Button type="submit" className="w-full" isLoading={isLoading}>
           Create Account
         </Button>
