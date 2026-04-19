@@ -5,6 +5,7 @@ interface AnnouncementResponse {
   id: string;
   title: string;
   content: string;
+  userId: string;
   postedBy: string;
   datePosted: Date;
   user: {
@@ -54,6 +55,7 @@ export async function createAnnouncement(
     id: announcement.id,
     title: announcement.title,
     content: announcement.content,
+    userId: announcement.userId,
     postedBy: announcement.postedBy,
     datePosted: announcement.datePosted,
     user: announcement.user,
@@ -100,6 +102,7 @@ export async function getAnnouncements(
       id: ann.id,
       title: ann.title,
       content: ann.content,
+      userId: ann.userId,
       postedBy: ann.postedBy,
       datePosted: ann.datePosted,
       user: ann.user,
@@ -138,6 +141,7 @@ export async function getAnnouncementById(id: string): Promise<AnnouncementRespo
     id: announcement.id,
     title: announcement.title,
     content: announcement.content,
+    userId: announcement.userId,
     postedBy: announcement.postedBy,
     datePosted: announcement.datePosted,
     user: announcement.user,
