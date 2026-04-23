@@ -2,10 +2,10 @@ import { createClient } from 'redis';
 
 /**
  * Redis client for rate limiting
- * Connects to local Docker Redis service on localhost:6379
+ * Uses REDIS_URL when provided, otherwise falls back to local Redis.
  */
 export const redis = createClient({
-  url: 'redis://localhost:6379',
+  url: process.env.REDIS_URL || 'redis://localhost:6379',
 });
 
 redis.connect().catch((err) => {
