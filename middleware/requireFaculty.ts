@@ -18,7 +18,7 @@ import type { AuthRouteHandler } from '@/types/middleware';
  */
 export function withFaculty(handler: AuthRouteHandler) {
   return withAuth(async (request, context, user) => {
-    if (user.role !== 'FACULTY' && user.role !== 'ADMIN') {
+    if (user.role !== 'faculty' && user.role !== 'admin') {
       return NextResponse.json(
         { error: 'Forbidden: Faculty access required' },
         { status: 403 }

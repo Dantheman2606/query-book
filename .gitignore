@@ -144,3 +144,12 @@ vite.config.ts.timestamp-*
 .vite/
 
 .continue
+
+# Test artifacts
+test-logs/
+test-results/
+playwright-report/
+.swc
+
+# Local demo data scripts
+local-seed/

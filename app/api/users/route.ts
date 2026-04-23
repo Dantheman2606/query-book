@@ -1,13 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withAdmin } from '@/middleware/requireAdmin';
+import { withRateLimit } from '@/middleware/rateLimiter';
+import { getUsers } from '@/services/user.service';
+import type { AuthRouteHandler } from '@/types/middleware';
 
 /**
- * Returns a list of all users
- * Only accessible by authenticated users (and possibly admin depending on requirements, though doc says "Auth Required: Yes")
- *
+ * Get all users (Admin only)
  * Route: GET /api/users
- * Auth Required: Yes
+ * Auth Required: Yes | Admin Required: Yes
+ * Rate Limit: 50 requests per 60 seconds per IP
  */
-export async function GET(request: NextRequest) {
-  // Implementation goes here
-  return NextResponse.json({ users: [] }, { status: 200 });
-}
+export const GET = withRateLimit(
+  withAdmin(
+    (async (request, context, user) => {
+      try {
+        const searchParams = new URL(request.url).searchParams;
+        const search = searchParams.get('search') || undefined;
+        const limit = Number(searchParams.get('limit') || '20');
+        const offset = Number(searchParams.get('offset') || '0');
+
+        const result = await getUsers({ search, limit, offset });
+
+        return NextResponse.json(
+          result,
+          { status: 200 }
+        );
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        return NextResponse.json(
+          { message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' },
+          { status: 500 }
+        );
+      }
+    }) as AuthRouteHandler
+  ),
+  { type: 'general' }
+);

@@ -12,6 +12,24 @@ services:
       - "5433:5432"  # Changed from "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - query-book-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: query-book-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - query-book-network
 
 volumes:
   postgres_data:
+  redis_data:
+
+networks:
+  query-book-network:
+    driver: bridge

@@ -1,8 +1,11 @@
 import NextAuth, { type NextAuthOptions, type Session } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { compare } from 'bcryptjs';
 import { db } from './db';
 import { JWT } from 'next-auth/jwt';
+import { NextRequest } from 'next/server';
+import { jwtVerify } from 'jose';
 
 type SessionUserWithClaims = NonNullable<Session['user']> & {
   id: string;
@@ -84,13 +87,78 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
 };
 
-export const { auth, signIn, signOut, handlers } = NextAuth(authOptions);
+export const { handlers } = NextAuth(authOptions);
 
 /**
  * Helper function to get the current authenticated user
- * Calls the NextAuth auth() function and returns session.user or null
+ * Tries NextAuth session first, then checks for JWT in Authorization header
+ * This supports both cookie-based and token-based authentication
  */
-export async function getCurrentUser() {
-  const session = await auth();
-  return session?.user || null;
+export async function getCurrentUser(request?: NextRequest) {
+  try {
+    // First try to get NextAuth session
+    const session = await getServerSession(authOptions);
+    if (session?.user) {
+      const sessionUser = session.user as SessionUserWithClaims;
+      if (!sessionUser.emailVerified) {
+        console.log('User email not verified');
+        return null;
+      }
+      console.log('Got user from NextAuth session');
+      return session.user;
+    }
+
+    // If no session, check for JWT in Authorization header
+    let authHeader = '';
+    if (request) {
+      authHeader = request.headers.get('authorization') || '';
+    } else {
+      // In page routes, use headers() from next/headers
+      try {
+        const { headers } = await import('next/headers');
+        const headersList = await headers();
+        authHeader = headersList.get('authorization') || '';
+      } catch {
+        // headers() not available in this context
+      }
+    }
+
+    console.log('Auth header:', authHeader ? 'present' : 'missing');
+
+    if (authHeader.startsWith('Bearer ')) {
+      const token = authHeader.slice(7); // Remove 'Bearer ' prefix
+      const secret = new TextEncoder().encode(
+        process.env.NEXTAUTH_SECRET || 'default_development_secret_key_change_in_production'
+      );
+
+      try {
+        const verified = await jwtVerify(token, secret);
+        
+        // Check if user email is verified
+        if (!verified.payload.isVerified) {
+          console.log('User email not verified');
+          return null;
+        }
+        
+        console.log('JWT verified successfully');
+        return {
+          id: verified.payload.id as string,
+          email: verified.payload.email as string,
+          name: verified.payload.name as string,
+          role: verified.payload.role as string,
+          emailVerified: verified.payload.isVerified as boolean,
+          isActive: verified.payload.isActive as boolean,
+        };
+      } catch (error) {
+        console.error('JWT validation failed:', error);
+        return null;
+      }
+    }
+
+    console.log('No valid auth header or session found');
+    return null;
+  } catch (error) {
+    console.error('Error getting current user:', error);
+    return null;
+  }
 }

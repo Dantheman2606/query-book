@@ -1,29 +1,99 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@/middleware/requireAuth';
+import { withRateLimit } from '@/middleware/rateLimiter';
+import {
+  CreateQuerySchema,
+  QueryFilterSchema,
+  type CreateQuery,
+  type QueryFilter,
+} from '@/schemas/query';
+import {
+  createQuery,
+  getQueries,
+} from '@/services/query.service';
+import type { AuthRouteHandler } from '@/types/middleware';
 
 /**
- * Creates a new query/question
- * Requires authentication
- * Validates request body (title, content, tags, etc.)
- * Saves query to database
- * Returns the created query object
- *
+ * Create a new query (question)
  * Route: POST /api/queries
  * Auth Required: Yes
+ * Rate Limit: 20 requests per 60 seconds per IP
  */
-export async function POST(request: NextRequest) {
-  // Implementation goes here
-  return NextResponse.json({ query: 'new_query' }, { status: 201 });
-}
+export const POST = withRateLimit(
+  withAuth(
+    (async (request, context, user) => {
+      try {
+        const body = await request.json();
+        const result = CreateQuerySchema.safeParse(body);
+
+        if (!result.success) {
+          return NextResponse.json(
+            {
+              error: 'Validation failed',
+              fields: result.error.flatten().fieldErrors,
+            },
+            { status: 422 }
+          );
+        }
+
+        const data: CreateQuery = result.data;
+        const query = await createQuery(data, user.id, user.name);
+
+        return NextResponse.json(
+          { message: 'Query posted successfully', query },
+          { status: 201 }
+        );
+      } catch (error) {
+        console.error('Error creating query:', error);
+
+        if (error instanceof SyntaxError) {
+          return NextResponse.json(
+            { error: 'Invalid JSON in request body' },
+            { status: 400 }
+          );
+        }
+
+        return NextResponse.json(
+          { message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' },
+          { status: 500 }
+        );
+      }
+    }) as AuthRouteHandler
+  ),
+  { type: 'auth' }
+);
 
 /**
- * Returns all queries
- * Supports pagination and filtering (e.g. ?page=1&limit=10)
- * Requires authentication
- *
+ * Get all queries with filtering and pagination
  * Route: GET /api/queries
  * Auth Required: Yes
+ * Rate Limit: 100 requests per 60 seconds per IP
  */
-export async function GET(request: NextRequest) {
-  // Implementation goes here
-  return NextResponse.json({ queries: [] }, { status: 200 });
-}
+export const GET = withRateLimit(
+  withAuth(
+    (async (request, context, user) => {
+      try {
+        const searchParams = new URL(request.url).searchParams;
+        const filters: Partial<QueryFilter> = {
+          search: searchParams.get('search') || undefined,
+          tags: searchParams.get('tags')?.split(',').filter(Boolean) || undefined,
+          sortBy: (searchParams.get('sortBy') as 'recent' | 'popular' | 'trending') || 'recent',
+          limit: searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 20,
+          offset: searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : 0,
+        };
+
+        const validatedFilters = QueryFilterSchema.parse(filters);
+        const result = await getQueries(validatedFilters);
+
+        return NextResponse.json(result, { status: 200 });
+      } catch (error) {
+        console.error('Error fetching queries:', error);
+        return NextResponse.json(
+          { message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' },
+          { status: 500 }
+        );
+      }
+    }) as AuthRouteHandler
+  ),
+  { type: 'general' }
+);

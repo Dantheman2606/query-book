@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from './requireAuth';
+import { recordForbidden } from '@/lib/adminTelemetry';
 import type { AuthRouteHandler } from '@/types/middleware';
 
 /**
@@ -17,7 +18,20 @@ import type { AuthRouteHandler } from '@/types/middleware';
  */
 export function withAdmin(handler: AuthRouteHandler) {
   return withAuth(async (request, context, user) => {
-    if (user.role !== 'ADMIN') {
+    if (user.role?.toLowerCase() !== 'admin') {
+      const ip =
+        request.headers.get('x-forwarded-for') ||
+        request.headers.get('x-real-ip') ||
+        '127.0.0.1';
+
+      recordForbidden({
+        method: request.method,
+        path: request.nextUrl.pathname,
+        userId: user.id,
+        userRole: user.role,
+        ip,
+      });
+
       return NextResponse.json(
         { error: 'Forbidden: Admin access required' },
         { status: 403 }

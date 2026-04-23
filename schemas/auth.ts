@@ -9,7 +9,11 @@ export const RegisterSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   name: z.string().min(1).max(255, 'Name must be less than 255 characters'),
-}).strict();
+  role: z.enum(['student', 'faculty', 'admin']).default('student'),
+  department: z.string().optional().default(''),
+  avatarUrl: z.string().url().or(z.literal('')).optional().default(''),
+  bio: z.string().max(200).optional().default(''),
+});
 
 export const VerifyEmailSchema = z.object({
   token: z.string().min(1, 'Verification token is required'),
