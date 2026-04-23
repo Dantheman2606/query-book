@@ -43,5 +43,15 @@ export function useTags() {
     }
   }, [fetchAllTags, showToast]);
 
-  return { tags, isLoading, fetchSelectableTags, fetchAllTags, createTag };
+  const deleteTag = useCallback(async (id: string, name?: string) => {
+    try {
+      await tagService.deleteTag(id);
+      setTags(prev => prev.filter(tag => tag.id !== id));
+      showToast(`Tag "${name || id}" deleted`, 'success');
+    } catch (e: any) {
+      showToast(e.message || 'Failed to delete tag', 'error');
+    }
+  }, [showToast]);
+
+  return { tags, isLoading, fetchSelectableTags, fetchAllTags, createTag, deleteTag };
 }

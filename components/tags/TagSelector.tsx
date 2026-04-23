@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { Tag } from '@/types/frontend';
 import { clsx } from 'clsx';
 import { X, ChevronDown } from 'lucide-react';
+import Input from '@/components/ui/Input';
 
 interface TagSelectorProps {
   tags: Tag[];
@@ -14,6 +15,7 @@ interface TagSelectorProps {
 
 export default function TagSelector({ tags, selected, onChange, label, error }: TagSelectorProps) {
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
 
   const toggle = (id: string) => {
     onChange(selected.includes(id) ? selected.filter(s => s !== id) : [...selected, id]);
@@ -22,6 +24,9 @@ export default function TagSelector({ tags, selected, onChange, label, error }: 
   const remove = (id: string) => onChange(selected.filter(s => s !== id));
 
   const selectedTags = tags.filter(t => selected.includes(t.id));
+  const filteredTags = search.trim()
+    ? tags.filter((tag) => tag.name.toLowerCase().includes(search.trim().toLowerCase()))
+    : tags;
 
   return (
     <div className="flex flex-col gap-1 relative">
@@ -59,11 +64,20 @@ export default function TagSelector({ tags, selected, onChange, label, error }: 
       {/* Dropdown */}
       {open && (
         <div className="absolute top-full left-0 right-0 mt-1 z-20 card shadow-xl max-h-56 overflow-y-auto animate-fade-in">
-          {tags.length === 0 ? (
+          <div className="p-2 border-b border-gray-100 dark:border-gray-700/60 sticky top-0 bg-white dark:bg-gray-900 z-10">
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search tags..."
+              wrapperClassName="mb-0"
+            />
+          </div>
+
+          {filteredTags.length === 0 ? (
             <p className="text-sm text-gray-400 px-3 py-2">No tags available</p>
           ) : (
             <div className="p-2 flex flex-wrap gap-1.5">
-              {tags.map(tag => (
+              {filteredTags.map(tag => (
                 <button
                   key={tag.id}
                   type="button"

@@ -1,12 +1,12 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import Link from 'next/link';
 import { Plus, HelpCircle, Compass, Flame, Filter, ChartNoAxesColumn } from 'lucide-react';
 import { useQueries } from '@/hooks/useQueries';
 import { useTags } from '@/hooks/useTags';
 import { useAuth } from '@/contexts/AuthContext';
 import QueryList from '@/components/queries/QueryList';
 import QueryFiltersBar from '@/components/queries/QueryFiltersBar';
-import CreateQueryForm from '@/components/queries/CreateQueryForm';
 import Pagination from '@/components/ui/Pagination';
 import Button from '@/components/ui/Button';
 
@@ -14,7 +14,6 @@ export default function QueriesPage() {
   const { user } = useAuth();
   const { queries, total, isLoading, filters, fetchQueries, updateFilter, vote, deleteQuery } = useQueries();
   const { tags, fetchSelectableTags } = useTags();
-  const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
     fetchQueries();
@@ -104,9 +103,11 @@ export default function QueriesPage() {
               </p>
             </div>
             {user && (
-              <Button leftIcon={<Plus className="w-4 h-4" />} onClick={() => setCreateOpen(true)}>
-                Ask Question
-              </Button>
+              <Link href="/queries/create">
+                <Button leftIcon={<Plus className="w-4 h-4" />}>
+                  Ask Question
+                </Button>
+              </Link>
             )}
           </div>
 
@@ -180,13 +181,6 @@ export default function QueriesPage() {
         </aside>
       </div>
 
-      {/* Create modal */}
-      <CreateQueryForm
-        isOpen={createOpen}
-        onClose={() => setCreateOpen(false)}
-        onCreated={fetchQueries}
-        tags={tags}
-      />
     </div>
   );
 }

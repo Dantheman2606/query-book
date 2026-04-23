@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { redis } from '@/utils/redis';
+import { recordRateLimitCheck } from '@/lib/adminTelemetry';
 import type { RouteHandler, LimiterType } from '@/types/middleware';
 
 /**
@@ -9,7 +10,7 @@ async function checkRateLimit(
   key: string,
   limit: number,
   window: number
-): Promise<{ success: boolean; remaining: number; reset: number }> {
+): Promise<{ success: boolean; remaining: number; reset: number; hadError: boolean }> {
   const now = Date.now();
   const resetTime = now + window * 1000;
 
@@ -31,6 +32,7 @@ async function checkRateLimit(
         success: true,
         remaining: Math.max(0, limit - current),
         reset,
+        hadError: false,
       };
     }
 
@@ -38,6 +40,7 @@ async function checkRateLimit(
       success: false,
       remaining: 0,
       reset,
+      hadError: false,
     };
   } catch (error) {
     console.error('Rate limit check error:', error);
@@ -47,6 +50,7 @@ async function checkRateLimit(
       success: true,
       remaining: limit - 1,
       reset,
+      hadError: true,
     };
   }
 }
@@ -80,7 +84,15 @@ export function withRateLimit(handler: RouteHandler, options: { type: LimiterTyp
 
     // Check rate limit
     const rateLimitKey = `ratelimit:${options.type}:${ip}`;
-    const { success, remaining, reset } = await checkRateLimit(rateLimitKey, limit, window);
+    const { success, remaining, reset, hadError } = await checkRateLimit(rateLimitKey, limit, window);
+
+    recordRateLimitCheck({
+      method: request.method,
+      path: request.nextUrl.pathname,
+      ip,
+      exceeded: !success,
+      hadError,
+    });
 
     // Create response headers
     const headers = new Headers({

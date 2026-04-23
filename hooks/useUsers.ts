@@ -8,12 +8,18 @@ export function useUsers() {
   const { showToast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [total, setTotal] = useState(0);
+  const [limit, setLimit] = useState(0);
+  const [offset, setOffset] = useState(0);
 
-  const fetchUsers = useCallback(async () => {
+  const fetchUsers = useCallback(async (options?: { search?: string; limit?: number; offset?: number }) => {
     setIsLoading(true);
     try {
-      const result = await userService.getAllUsers();
+      const result = await userService.getAllUsers(options);
       setUsers(result.users ?? []);
+      setTotal(result.total ?? 0);
+      setLimit(result.limit ?? 0);
+      setOffset(result.offset ?? 0);
     } catch (e: any) {
       showToast(e.message || 'Failed to load users', 'error');
     } finally {
@@ -31,5 +37,5 @@ export function useUsers() {
     }
   }, [showToast]);
 
-  return { users, isLoading, fetchUsers, deleteUser };
+  return { users, total, limit, offset, isLoading, fetchUsers, deleteUser };
 }

@@ -32,15 +32,39 @@
 
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from "@prisma/adapter-pg";
+import { recordDbOperation } from '@/lib/adminTelemetry';
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL!,
 });
 
-const globalForPrisma = global as any;
+function createClient() {
+  const prisma = new PrismaClient({ adapter });
 
-if (!globalForPrisma.prisma) {
-  globalForPrisma.prisma = new PrismaClient({ adapter });
+  return prisma.$extends({
+    query: {
+      $allModels: {
+        async $allOperations({ operation, args, query }) {
+          try {
+            const result = await query(args);
+            recordDbOperation(operation, false);
+            return result;
+          } catch (error) {
+            recordDbOperation(operation, true);
+            throw error;
+          }
+        },
+      },
+    },
+  });
 }
 
-export const db: PrismaClient = globalForPrisma.prisma;
+const globalForPrisma = global as typeof globalThis & {
+  prisma?: ReturnType<typeof createClient>;
+};
+
+if (!globalForPrisma.prisma) {
+  globalForPrisma.prisma = createClient();
+}
+
+export const db = globalForPrisma.prisma;

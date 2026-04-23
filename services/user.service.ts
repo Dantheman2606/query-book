@@ -16,6 +16,12 @@ interface UserResponse {
   updatedAt: Date;
 }
 
+interface GetUsersOptions {
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
+
 /**
  * Get all users
  */
@@ -40,6 +46,57 @@ export async function getAllUsers(): Promise<UserResponse[]> {
   });
 
   return users;
+}
+
+/**
+ * Get users with optional search and pagination
+ */
+export async function getUsers(options: GetUsersOptions = {}) {
+  const limit = Math.min(100, Math.max(1, options.limit ?? 20));
+  const offset = Math.max(0, options.offset ?? 0);
+  const search = options.search?.trim();
+
+  const where = search
+    ? {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' as const } },
+          { email: { contains: search, mode: 'insensitive' as const } },
+        ],
+      }
+    : undefined;
+
+  const [users, total] = await Promise.all([
+    db.user.findMany({
+      where,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        department: true,
+        avatarUrl: true,
+        bio: true,
+        isActive: true,
+        isVerified: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: limit,
+      skip: offset,
+    }),
+    db.user.count({ where }),
+  ]);
+
+  return {
+    users,
+    total,
+    limit,
+    offset,
+    hasMore: offset + limit < total,
+  };
 }
 
 /**

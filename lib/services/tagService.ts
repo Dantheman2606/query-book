@@ -16,3 +16,7 @@ export async function getTags(params?: { search?: string; limit?: number; offset
 export async function createTag(name: string) {
   return apiRequest('/tags', { method: 'POST', body: { name } });
 }
+
+export async function deleteTag(id: string) {
+  return apiRequest(`/tags/${id}`, { method: 'DELETE' });
+}

@@ -1,8 +1,34 @@
 import { apiRequest } from '@/lib/apiClient';
 import type { User } from '@/types/frontend';
 
-export async function getAllUsers(): Promise<{ users: User[] }> {
-  return apiRequest<{ users: User[] }>('/users');
+interface GetUsersOptions {
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export async function getAllUsers(options: GetUsersOptions = {}): Promise<{
+  users: User[];
+  total: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+}> {
+  const params = new URLSearchParams();
+  if (options.search?.trim()) params.set('search', options.search.trim());
+  if (options.limit != null) params.set('limit', String(options.limit));
+  if (options.offset != null) params.set('offset', String(options.offset));
+
+  const query = params.toString();
+  const path = query ? `/users?${query}` : '/users';
+
+  return apiRequest<{
+    users: User[];
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  }>(path);
 }
 
 export async function getUserById(id: string): Promise<{ user: User }> {

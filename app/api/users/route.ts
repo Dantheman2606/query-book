@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdmin } from '@/middleware/requireAdmin';
 import { withRateLimit } from '@/middleware/rateLimiter';
-import { getAllUsers } from '@/services/user.service';
+import { getUsers } from '@/services/user.service';
 import type { AuthRouteHandler } from '@/types/middleware';
 
 /**
@@ -14,10 +14,15 @@ export const GET = withRateLimit(
   withAdmin(
     (async (request, context, user) => {
       try {
-        const users = await getAllUsers();
+        const searchParams = new URL(request.url).searchParams;
+        const search = searchParams.get('search') || undefined;
+        const limit = Number(searchParams.get('limit') || '20');
+        const offset = Number(searchParams.get('offset') || '0');
+
+        const result = await getUsers({ search, limit, offset });
 
         return NextResponse.json(
-          { users },
+          result,
           { status: 200 }
         );
       } catch (error) {

@@ -172,3 +172,100 @@ export interface Toast {
   message: string;
   type: ToastType;
 }
+
+// ─── Admin ────────────────────────────────────────────────────────────────────
+
+export interface AdminTopContributor {
+  userId: string;
+  name: string;
+  queries: number;
+  replies: number;
+  totalContributions: number;
+  score: number;
+}
+
+export interface AdminDashboardAnalytics {
+  totals: {
+    users: number;
+    students: number;
+    faculty: number;
+    admins: number;
+    queries: number;
+    replies: number;
+    announcements: number;
+    tags: number;
+  };
+  activity: {
+    queriesToday: number;
+    repliesToday: number;
+    announcementsToday: number;
+    activeUsersLast7Days: number;
+    suspiciousEventsLast24h: number;
+  };
+  topContributors: AdminTopContributor[];
+  telemetry: {
+    startedAt: string;
+    uptimeSeconds: number;
+    estimatedDowntimeSeconds: number;
+    apiRequests: number;
+    apiErrors: number;
+    authFailures: number;
+    forbiddenRequests: number;
+    rateLimitChecks: number;
+    rateLimitExceeded: number;
+    rateLimitErrors: number;
+    dbReads: number;
+    dbWrites: number;
+    dbErrors: number;
+  };
+}
+
+export interface AdminAuditLog {
+  id: string;
+  timestamp: string;
+  action:
+    | 'api_request'
+    | 'auth_failed'
+    | 'forbidden'
+    | 'rate_limit_exceeded'
+    | 'rate_limit_error'
+    | 'role_change'
+    | 'db_error';
+  userId?: string;
+  userRole?: string;
+  userName?: string | null;
+  userEmail?: string | null;
+  method?: string;
+  path?: string;
+  statusCode?: number;
+  ip?: string;
+  details?: string;
+}
+
+export interface AdminSystemMetrics {
+  service: {
+    startedAt: string;
+    uptimeSeconds: number;
+    estimatedDowntimeSeconds: number;
+    dbHealthy: boolean;
+    redisHealthy: boolean;
+  };
+  database: {
+    reads: number;
+    writes: number;
+    errors: number;
+  };
+  rateLimits: {
+    checks: number;
+    exceeded: number;
+    errors: number;
+  };
+  auth: {
+    failures: number;
+    forbidden: number;
+  };
+  api: {
+    requests: number;
+    errors: number;
+  };
+}
