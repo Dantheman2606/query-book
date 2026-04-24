@@ -17,8 +17,33 @@ export function useQueries(initialFilters: QueryFilters = {}) {
     setIsLoading(true);
     try {
       const result = await queryService.getQueries({ ...filters, ...overrides }) as any;
-      setQueries(result.queries || result.data || []);
+      const loadedQueries = result.queries || result.data || [];
+      setQueries(loadedQueries);
       setTotal(result.pagination?.total ?? result.total ?? 0);
+
+      if (loadedQueries.length === 0) {
+        setUserVotes({});
+      } else {
+        const voteEntries = await Promise.all(
+          loadedQueries.map(async (query: Query) => {
+            try {
+              const voteStatus = await queryService.getQueryVotes(query.id);
+              const userVote =
+                voteStatus.userVote === 'UPVOTE' || voteStatus.userVote === 'DOWNVOTE'
+                  ? voteStatus.userVote
+                  : null;
+              return [query.id, userVote] as const;
+            } catch {
+              return [query.id, null] as const;
+            }
+          })
+        );
+
+        setUserVotes((prev) => ({
+          ...prev,
+          ...Object.fromEntries(voteEntries),
+        }));
+      }
     } catch (e: any) {
       showToast(e.message || 'Failed to load queries', 'error');
     } finally {
@@ -70,16 +95,24 @@ export function useQueries(initialFilters: QueryFilters = {}) {
       return { upvotes, downvotes, nextVote };
     };
 
+    const getNextVote = (voteType: 'up' | 'down', currentVote: 'UPVOTE' | 'DOWNVOTE' | null) => {
+      if (voteType === 'up') return currentVote === 'UPVOTE' ? null : 'UPVOTE';
+      return currentVote === 'DOWNVOTE' ? null : 'DOWNVOTE';
+    };
+
     setPendingVotes(prev => ({ ...prev, [id]: true }));
 
     try {
+      const optimisticVote = getNextVote(type, previousVote);
+
+      setUserVotes(prev => ({ ...prev, [id]: optimisticVote }));
+
       setQueries(prev =>
         prev.map(query => {
           if (query.id !== id) return query;
 
           previousQuery = query;
-          const { upvotes, downvotes, nextVote } = applyTransition(query, type, previousVote);
-          setUserVotes(v => ({ ...v, [id]: nextVote }));
+          const { upvotes, downvotes } = applyTransition(query, type, previousVote);
 
           return {
             ...query,
@@ -124,5 +157,5 @@ export function useQueries(initialFilters: QueryFilters = {}) {
     }
   }, [showToast]);
 
-  return { queries, total, isLoading, filters, fetchQueries, updateFilter, vote, deleteQuery };
+  return { queries, total, isLoading, filters, userVotes, fetchQueries, updateFilter, vote, deleteQuery };
 }

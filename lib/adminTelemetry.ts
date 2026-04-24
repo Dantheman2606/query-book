@@ -13,6 +13,7 @@ export interface AuditLogEntry {
   action: TelemetryAction;
   userId?: string;
   userRole?: string;
+  userEmail?: string;
   method?: string;
   path?: string;
   statusCode?: number;
@@ -203,6 +204,9 @@ export function recordRateLimitCheck(payload: {
   method?: string;
   path?: string;
   ip?: string;
+  userId?: string;
+  userRole?: string;
+  userEmail?: string;
   exceeded: boolean;
   hadError: boolean;
 }) {
@@ -216,6 +220,9 @@ export function recordRateLimitCheck(payload: {
       method: payload.method,
       path: payload.path,
       statusCode: 429,
+      userId: payload.userId,
+      userRole: payload.userRole,
+      userEmail: payload.userEmail,
       ip: payload.ip,
       details: 'Rate limit exceeded',
     });

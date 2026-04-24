@@ -10,6 +10,7 @@ import { clsx } from 'clsx';
 
 interface ReplyCardProps {
   reply: Reply;
+  userVotes: Record<string, 'UPVOTE' | 'DOWNVOTE' | null>;
   depth?: number;
   onVote: (id: string, type: 'up' | 'down') => void;
   onReply: (parentId: string, parentAuthor: string) => void;
@@ -23,6 +24,7 @@ const MAX_DEPTH = 6; // Stop indenting past this
 
 export default function ReplyCard({
   reply,
+  userVotes,
   depth = 0,
   onVote,
   onReply,
@@ -33,6 +35,7 @@ export default function ReplyCard({
 }: ReplyCardProps) {
   const { user } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
+  const currentUserVote = userVotes[reply.id] ?? null;
 
   const hasChildren = reply.children && reply.children.length > 0;
   const indentStyle = depth > 0 ? { marginLeft: `${Math.min(depth, MAX_DEPTH) * 20}px` } : {};
@@ -77,7 +80,10 @@ export default function ReplyCard({
               <div className="flex items-center gap-0.5">
                 <button
                   onClick={() => onVote(reply.id, 'up')}
-                  className="vote-btn text-gray-400 hover:text-brand-500 h-6 w-6"
+                  className={clsx(
+                    'vote-btn text-gray-400 hover:text-brand-500 h-6 w-6',
+                    currentUserVote === 'UPVOTE' && 'upvoted'
+                  )}
                   aria-label="Upvote"
                 >
                   <ArrowUp className="w-3.5 h-3.5" />
@@ -96,7 +102,10 @@ export default function ReplyCard({
                 </span>
                 <button
                   onClick={() => onVote(reply.id, 'down')}
-                  className="vote-btn text-gray-400 hover:text-rose-500 h-6 w-6"
+                  className={clsx(
+                    'vote-btn text-gray-400 hover:text-rose-500 h-6 w-6',
+                    currentUserVote === 'DOWNVOTE' && 'downvoted'
+                  )}
                   aria-label="Downvote"
                 >
                   <ArrowDown className="w-3.5 h-3.5" />
@@ -147,6 +156,7 @@ export default function ReplyCard({
               <ReplyCard
                 key={child.id}
                 reply={child}
+                userVotes={userVotes}
                 depth={depth + 1}
                 onVote={onVote}
                 onReply={onReply}

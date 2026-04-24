@@ -76,12 +76,6 @@
     @apply flex items-center justify-center h-7 w-7 rounded-full transition-all duration-150
            hover:bg-gray-100 dark:hover:bg-gray-700/60 active:scale-95;
   }
-  .vote-btn.upvoted {
-    @apply text-brand-500 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-900/30;
-  }
-  .vote-btn.downvoted {
-    @apply text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30;
-  }
 
   /* Tag pill */
   .tag-pill {

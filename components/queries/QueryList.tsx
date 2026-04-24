@@ -8,6 +8,7 @@ import { Search } from 'lucide-react';
 interface QueryListProps {
   queries: Query[];
   isLoading: boolean;
+  userVotes?: Record<string, 'UPVOTE' | 'DOWNVOTE' | null>;
   onVote?: (id: string, type: 'up' | 'down') => void;
   onDelete?: (id: string) => void;
   onTagFilter?: (tagId: string) => void;
@@ -34,7 +35,7 @@ function QuerySkeleton() {
   );
 }
 
-export default function QueryList({ queries, isLoading, onVote, onDelete, onTagFilter }: QueryListProps) {
+export default function QueryList({ queries, isLoading, userVotes, onVote, onDelete, onTagFilter }: QueryListProps) {
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -59,6 +60,7 @@ export default function QueryList({ queries, isLoading, onVote, onDelete, onTagF
         <QueryCard
           key={q.id}
           query={q}
+          userVote={userVotes?.[q.id] ?? null}
           onVote={onVote}
           onDelete={onDelete}
           onTagFilter={onTagFilter}

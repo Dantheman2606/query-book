@@ -12,12 +12,13 @@ import { formatDistanceToNow } from './timeUtils';
 
 interface QueryCardProps {
   query: Query;
+  userVote?: 'UPVOTE' | 'DOWNVOTE' | null;
   onVote?: (id: string, type: 'up' | 'down') => void;
   onDelete?: (id: string) => void;
   onTagFilter?: (tagId: string) => void;
 }
 
-export default function QueryCard({ query, onVote, onDelete, onTagFilter }: QueryCardProps) {
+export default function QueryCard({ query, userVote, onVote, onDelete, onTagFilter }: QueryCardProps) {
   const { user } = useAuth();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const netVotes = (query.upvotes ?? 0) - (query.downvotes ?? 0);
@@ -30,7 +31,11 @@ export default function QueryCard({ query, onVote, onDelete, onTagFilter }: Quer
         <div className="flex flex-col items-center gap-1 pt-0.5 shrink-0 w-8">
           <button
             onClick={() => onVote?.(query.id, 'up')}
-            className="vote-btn text-gray-400 hover:text-brand-500"
+            className={clsx(
+              'vote-btn text-gray-400 hover:text-brand-500',
+              userVote === 'UPVOTE' &&
+                'text-brand-600 bg-brand-100 hover:text-brand-700 hover:bg-brand-200 dark:text-brand-300 dark:bg-brand-900/40 dark:hover:bg-brand-900/60'
+            )}
             aria-label="Upvote"
           >
             <ArrowUp className="w-4 h-4" />
@@ -49,7 +54,11 @@ export default function QueryCard({ query, onVote, onDelete, onTagFilter }: Quer
           </span>
           <button
             onClick={() => onVote?.(query.id, 'down')}
-            className="vote-btn text-gray-400 hover:text-rose-500"
+            className={clsx(
+              'vote-btn text-gray-400 hover:text-rose-500',
+              userVote === 'DOWNVOTE' &&
+                'text-rose-600 bg-rose-100 hover:text-rose-700 hover:bg-rose-200 dark:text-rose-300 dark:bg-rose-900/40 dark:hover:bg-rose-900/60'
+            )}
             aria-label="Downvote"
           >
             <ArrowDown className="w-4 h-4" />

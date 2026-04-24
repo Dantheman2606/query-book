@@ -9,6 +9,7 @@ export function useQuery(id: string) {
   const [query, setQuery] = useState<Query | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [userVote, setUserVote] = useState<'UPVOTE' | 'DOWNVOTE' | null>(null);
+  const [isVotePending, setIsVotePending] = useState(false);
 
   const fetchQuery = useCallback(async () => {
     setIsLoading(true);
@@ -30,29 +31,82 @@ export function useQuery(id: string) {
   }, [id, showToast]);
 
   const vote = useCallback(async (type: 'up' | 'down') => {
-    if (!query) return;
-    try {
-      if (type === 'up') {
-        await queryService.upvoteQuery(id);
-        setQuery(prev => prev ? {
-          ...prev,
-          upvotes: userVote === 'UPVOTE' ? prev.upvotes - 1 : prev.upvotes + 1,
-          downvotes: userVote === 'DOWNVOTE' ? prev.downvotes - 1 : prev.downvotes,
-        } : prev);
-        setUserVote(prev => prev === 'UPVOTE' ? null : 'UPVOTE');
+    if (!query || isVotePending) return;
+
+    const previousQuery = query;
+    const previousVote = userVote;
+
+    const applyTransition = (current: Query, voteType: 'up' | 'down', currentVote: 'UPVOTE' | 'DOWNVOTE' | null) => {
+      let upvotes = current.upvotes ?? 0;
+      let downvotes = current.downvotes ?? 0;
+      let nextVote: 'UPVOTE' | 'DOWNVOTE' | null = currentVote;
+
+      if (voteType === 'up') {
+        if (currentVote === 'UPVOTE') {
+          upvotes = Math.max(0, upvotes - 1);
+          nextVote = null;
+        } else if (currentVote === 'DOWNVOTE') {
+          downvotes = Math.max(0, downvotes - 1);
+          upvotes += 1;
+          nextVote = 'UPVOTE';
+        } else {
+          upvotes += 1;
+          nextVote = 'UPVOTE';
+        }
       } else {
-        await queryService.downvoteQuery(id);
-        setQuery(prev => prev ? {
-          ...prev,
-          downvotes: userVote === 'DOWNVOTE' ? prev.downvotes - 1 : prev.downvotes + 1,
-          upvotes: userVote === 'UPVOTE' ? prev.upvotes - 1 : prev.upvotes,
-        } : prev);
-        setUserVote(prev => prev === 'DOWNVOTE' ? null : 'DOWNVOTE');
+        if (currentVote === 'DOWNVOTE') {
+          downvotes = Math.max(0, downvotes - 1);
+          nextVote = null;
+        } else if (currentVote === 'UPVOTE') {
+          upvotes = Math.max(0, upvotes - 1);
+          downvotes += 1;
+          nextVote = 'DOWNVOTE';
+        } else {
+          downvotes += 1;
+          nextVote = 'DOWNVOTE';
+        }
       }
+
+      return { upvotes, downvotes, nextVote };
+    };
+
+    const optimistic = applyTransition(query, type, previousVote);
+
+    setIsVotePending(true);
+    setUserVote(optimistic.nextVote);
+    setQuery(prev =>
+      prev
+        ? {
+            ...prev,
+            upvotes: optimistic.upvotes,
+            downvotes: optimistic.downvotes,
+          }
+        : prev
+    );
+
+    try {
+      const result = type === 'up'
+        ? await queryService.upvoteQuery(id)
+        : await queryService.downvoteQuery(id);
+
+      setQuery(prev =>
+        prev
+          ? {
+              ...prev,
+              upvotes: result.upvotes,
+              downvotes: result.downvotes,
+            }
+          : prev
+      );
+      setUserVote(result.userVote);
     } catch (e: any) {
+      setQuery(previousQuery);
+      setUserVote(previousVote);
       showToast(e.message || 'Failed to vote', 'error');
+    } finally {
+      setIsVotePending(false);
     }
-  }, [query, id, userVote, showToast]);
+  }, [query, id, userVote, isVotePending, showToast]);
 
   return { query, isLoading, userVote, fetchQuery, vote };
 }

@@ -172,7 +172,9 @@ export async function getAdminAuditLogs(options?: { limit?: number; offset?: num
   const logs = pagedLogs.map((log) => ({
     ...log,
     userName: log.userId ? userMap.get(log.userId)?.name || 'Unknown User' : null,
-    userEmail: log.userId ? userMap.get(log.userId)?.email || null : null,
+    userEmail: log.userId
+      ? userMap.get(log.userId)?.email || log.userEmail || null
+      : log.userEmail || null,
   }));
 
   return {

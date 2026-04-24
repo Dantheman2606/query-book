@@ -12,7 +12,7 @@ import Button from '@/components/ui/Button';
 
 export default function QueriesPage() {
   const { user } = useAuth();
-  const { queries, total, isLoading, filters, fetchQueries, updateFilter, vote, deleteQuery } = useQueries();
+  const { queries, total, isLoading, filters, userVotes, fetchQueries, updateFilter, vote, deleteQuery } = useQueries();
   const { tags, fetchSelectableTags } = useTags();
 
   useEffect(() => {
@@ -124,6 +124,7 @@ export default function QueriesPage() {
           <QueryList
             queries={queries}
             isLoading={isLoading}
+            userVotes={userVotes}
             onVote={vote}
             onDelete={deleteQuery}
             onTagFilter={handleTagToggle}

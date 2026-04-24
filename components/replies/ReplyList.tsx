@@ -11,11 +11,12 @@ interface ReplyListProps {
   replies: Reply[];
   queryId: string;
   isLoading: boolean;
+  userVotes: Record<string, 'UPVOTE' | 'DOWNVOTE' | null>;
   onVote: (id: string, type: 'up' | 'down') => void;
   onPost: (payload: CreateReplyPayload) => Promise<void>;
 }
 
-export default function ReplyList({ replies, queryId, isLoading, onVote, onPost }: ReplyListProps) {
+export default function ReplyList({ replies, queryId, isLoading, userVotes, onVote, onPost }: ReplyListProps) {
   // Tracks which thread we're replying to (null = top-level)
   const [replyingTo, setReplyingTo] = useState<{ id: string; author: string } | null>(null);
 
@@ -55,6 +56,7 @@ export default function ReplyList({ replies, queryId, isLoading, onVote, onPost 
               <div key={reply.id}>
                 <ReplyCard
                   reply={reply}
+                  userVotes={userVotes}
                   depth={0}
                   onVote={onVote}
                   onReply={handleReply}

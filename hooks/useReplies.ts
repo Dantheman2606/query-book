@@ -135,5 +135,5 @@ export function useReplies(queryId: string) {
     }
   }, [pendingVotes, showToast, userVotes]);
 
-  return { replies, isLoading, fetchReplies, postReply, vote };
+  return { replies, isLoading, userVotes, fetchReplies, postReply, vote };
 }

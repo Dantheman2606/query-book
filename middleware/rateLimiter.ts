@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { redis } from '@/utils/redis';
 import { recordRateLimitCheck } from '@/lib/adminTelemetry';
+import { getCurrentUser } from '@/lib/auth';
 import type { RouteHandler, LimiterType } from '@/types/middleware';
 
 /**
@@ -85,11 +86,16 @@ export function withRateLimit(handler: RouteHandler, options: { type: LimiterTyp
     // Check rate limit
     const rateLimitKey = `ratelimit:${options.type}:${ip}`;
     const { success, remaining, reset, hadError } = await checkRateLimit(rateLimitKey, limit, window);
+    const currentUser = await getCurrentUser(request);
+    const authUser = currentUser as { id?: string; role?: string; email?: string } | null;
 
     recordRateLimitCheck({
       method: request.method,
       path: request.nextUrl.pathname,
       ip,
+      userId: authUser?.id,
+      userRole: authUser?.role,
+      userEmail: authUser?.email,
       exceeded: !success,
       hadError,
     });

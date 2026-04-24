@@ -18,7 +18,7 @@ export default function QueryDetailPage() {
   const router = useRouter();
   const { user } = useAuth();
   const { query, isLoading, userVote, fetchQuery, vote } = useQuery(params.id);
-  const { replies, isLoading: repliesLoading, fetchReplies, postReply, vote: voteReply } = useReplies(params.id);
+  const { replies, isLoading: repliesLoading, userVotes: replyUserVotes, fetchReplies, postReply, vote: voteReply } = useReplies(params.id);
 
   useEffect(() => {
     fetchQuery();
@@ -48,7 +48,11 @@ export default function QueryDetailPage() {
           <div className="flex flex-col items-center gap-1.5 shrink-0 w-10">
             <button
               onClick={() => vote('up')}
-              className={clsx('vote-btn', userVote === 'UPVOTE' && 'upvoted')}
+              className={clsx(
+                'vote-btn text-gray-400 hover:text-brand-500',
+                userVote === 'UPVOTE' &&
+                  'text-brand-600 bg-brand-100 hover:text-brand-700 hover:bg-brand-200 dark:text-brand-300 dark:bg-brand-900/40 dark:hover:bg-brand-900/60'
+              )}
               aria-label="Upvote"
             >
               <ArrowUp className="w-5 h-5" />
@@ -65,7 +69,11 @@ export default function QueryDetailPage() {
             </span>
             <button
               onClick={() => vote('down')}
-              className={clsx('vote-btn', userVote === 'DOWNVOTE' && 'downvoted')}
+              className={clsx(
+                'vote-btn text-gray-400 hover:text-rose-500',
+                userVote === 'DOWNVOTE' &&
+                  'text-rose-600 bg-rose-100 hover:text-rose-700 hover:bg-rose-200 dark:text-rose-300 dark:bg-rose-900/40 dark:hover:bg-rose-900/60'
+              )}
               aria-label="Downvote"
             >
               <ArrowDown className="w-5 h-5" />
@@ -118,6 +126,7 @@ export default function QueryDetailPage() {
           replies={replies}
           queryId={params.id}
           isLoading={repliesLoading}
+          userVotes={replyUserVotes}
           onVote={voteReply}
           onPost={postReply}
         />
